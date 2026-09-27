@@ -114,6 +114,7 @@ struct SpiderPlaybackResult: Equatable {
     let url: String
     let headers: [String: String]
     let qualityOptions: [SpiderPlaybackQualityOption]
+    var subtitles: [SourceSubtitle] = []
 }
 
 /// type=3 的远程执行客户端。响应体使用 Spider 标准 JSON。
@@ -234,7 +235,9 @@ final class SpiderGatewayService {
         return SpiderPlaybackResult(
             url: url,
             headers: sanitizedHeaders(object["header"]),
-            qualityOptions: Self.playbackQualityOptions(from: object)
+            qualityOptions: Self.playbackQualityOptions(from: object),
+            subtitles: SourceSubtitleParser.parse(from: object, mediaURL: URL(string: url),
+                                            mediaHeaders: sanitizedHeaders(object["header"]))
         )
     }
 

@@ -47,10 +47,12 @@ final class SubtitleState: ObservableObject {
     @Published var selection: SubtitleSelection = .automatic
     @Published var selectedTrackID: Int?
     @Published var isLoading = true
+    @Published var statusMessage: String?
     @Published var unavailableMessage = "当前视频未提供可选字幕轨"
 
     func reset() {
         tracks = []
+        statusMessage = nil
         selection = .automatic
         selectedTrackID = nil
         isLoading = true

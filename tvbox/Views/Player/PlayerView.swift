@@ -85,6 +85,7 @@ final class SystemPlayerSessionController: ObservableObject {
 struct PlayerView: View {
     let urlString: String
     var headers: [String: String] = [:]
+    var sourceSubtitles: [SourceSubtitle] = []
     var startPosition: Double = 0
     var onProgressChanged: ((Double, Double?) -> Void)? = nil
     var onPlaybackEnded: (() -> Void)? = nil
@@ -127,7 +128,7 @@ struct PlayerView: View {
                 )
             case .mpv:
                 #if os(macOS) && canImport(Libmpv)
-                MPVPlayerView(urlString: urlString, headers: headers, startPosition: startPosition,
+                MPVPlayerView(urlString: urlString, headers: headers, sourceSubtitles: sourceSubtitles, startPosition: startPosition,
                               onProgressChanged: onProgressChanged, onPlaybackEnded: onPlaybackEnded,
                               onToggleFullScreen: onToggleFullScreen, canPlayNext: canPlayNext,
                               onPlayNext: onPlayNext, sharedController: mpvController)
@@ -147,6 +148,23 @@ struct PlayerView: View {
                     sharedController: vlcController
                 )
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            #if os(macOS) && canImport(Libmpv)
+            if selectedEngine != .mpv, !sourceSubtitles.isEmpty {
+                Button {
+                    vodPlayTypeRaw = PlayerEngine.mpv.rawValue
+                } label: {
+                    Label("此源有 \(sourceSubtitles.count) 份外挂字幕 · 使用 mpv", systemImage: "captions.bubble")
+                        .font(.caption)
+                        .padding(8)
+                        .background(.black.opacity(0.75), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .padding(12)
+            }
+            #endif
         }
         .id(selectedEngine.rawValue)
         .onAppear {

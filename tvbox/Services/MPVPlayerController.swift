@@ -14,16 +14,21 @@ private final class MPVSession: @unchecked Sendable {
         var duration: Double = 0
         var playing = false
         var loading = true
+        var ready = false
         var decoder = ""
         var tracks: [SubtitleTrack] = []
         var selectedID: Int?
     }
-    enum Event { case snapshot(Snapshot), ended, failed(String) }
+    enum Event {
+        case snapshot(Snapshot), ended, failed(String)
+        case subtitleLoaded(Int, Int), subtitleFailed(Int)
+    }
     private let queue = DispatchQueue(label: "com.tvbox.mpv.session", qos: .userInitiated)
     private var handle: OpaquePointer?
     private var timer: DispatchSourceTimer?
     private var loaded = false
     private var finished = false
+    private var subtitleFiles: [SourceSubtitleFile] = []
     private let layer: CAMetalLayer
     private let receive: @Sendable (Event) -> Void
 
@@ -62,15 +67,38 @@ private final class MPVSession: @unchecked Sendable {
         }
     }
 
-    func property(_ name: String, _ value: String) {
+    func property(_ name: String, _ value: String, playbackCritical: Bool = true) {
         queue.async { [self] in
             guard let handle else { return }
             let code = mpv_set_property_string(handle, name, value)
-            if code < 0 { receive(.failed("mpv 无法设置 \(name)")) }
+            if code < 0 && playbackCritical { receive(.failed("mpv 无法设置 \(name)")) }
         }
     }
 
     func command(_ arguments: [String]) { queue.async { [self] in commandNow(arguments) } }
+
+    func addSubtitle(_ file: SourceSubtitleFile, subtitle: SourceSubtitle, id: Int) {
+        queue.async { [self] in
+            guard let handle, loaded else { receive(.subtitleFailed(id)); return }
+            let arguments = ["sub-add", file.url.path, "auto", subtitle.title, subtitle.language ?? ""]
+            let allocated = arguments.map { strdup($0) }
+            defer { allocated.forEach { free($0) } }
+            var pointers = allocated.map { $0.map { UnsafePointer($0) } } + [nil]
+            guard mpv_command(handle, &pointers) >= 0 else { receive(.subtitleFailed(id)); return }
+            // Retain even when a native ID is unavailable: the native parser can
+            // still own the file until this session has fully shut down.
+            subtitleFiles.append(file)
+            let count = min(256, max(0, Int(number("track-list/count"))))
+            for index in 0..<count where string("track-list/\(index)/type") == "sub" {
+                if string("track-list/\(index)/external-filename") == file.url.path,
+                   let nativeID = Int(string("track-list/\(index)/id") ?? "") {
+                    receive(.subtitleLoaded(id, nativeID))
+                    return
+                }
+            }
+            receive(.subtitleFailed(id))
+        }
+    }
 
     func close() { queue.async { [self] in destroy() } }
 
@@ -79,6 +107,7 @@ private final class MPVSession: @unchecked Sendable {
         timer = nil
         if let handle { mpv_terminate_destroy(handle) }
         handle = nil
+        subtitleFiles.removeAll()
     }
 
     private func fail(_ code: Int32, operation: String) {
@@ -155,6 +184,7 @@ private final class MPVSession: @unchecked Sendable {
             }
         }
         var snapshot = Snapshot()
+        snapshot.ready = loaded
         snapshot.time = max(0, number("time-pos"))
         snapshot.duration = max(0, number("duration"))
         snapshot.loading = (!loaded && !finished) || string("paused-for-cache") == "yes"
@@ -189,6 +219,17 @@ final class MPVPlayerController: ObservableObject {
     private(set) var canvas = MPVVideoCanvas(frame: .zero)
     private var session: MPVSession?
     private var identity: MPVPlaybackOptions.Identity?
+    private let loadSubtitle: (SourceSubtitle) async throws -> SourceSubtitleFile
+    private var sourceSubtitles: [SourceSubtitle] = []
+    private var loadedSubtitleIDs: [Int: Int] = [:]
+    private var externalNativeIDs = Set<Int>()
+    private var failedSubtitleIDs = Set<Int>()
+    private var subtitleTask: Task<Void, Never>?
+    private var pendingSubtitleID: Int?
+    private var subtitleRequestToken = UUID()
+    private var subtitleReady = false
+    private var appliedSubtitleID: String?
+
     private var onProgressChanged: ((Double, Double?) -> Void)?
     private var onPlaybackEnded: (() -> Void)?
     private var onPlaybackFailed: (() -> Void)?
@@ -198,9 +239,14 @@ final class MPVPlayerController: ObservableObject {
         return decoder == "no" ? "软件解码" : "VideoToolbox 硬件解码"
     }
 
-    deinit { session?.close() }
 
-    func play(url: URL, headers: [String: String] = [:], startPosition: Double = 0,
+    init(loadSubtitle: @escaping (SourceSubtitle) async throws -> SourceSubtitleFile = { try await SourceSubtitleLoader().load($0) }) {
+        self.loadSubtitle = loadSubtitle
+    }
+
+    deinit { subtitleTask?.cancel(); session?.close() }
+
+    func play(url: URL, headers: [String: String] = [:], sourceSubtitles: [SourceSubtitle] = [], startPosition: Double = 0,
               isLive: Bool = false, decodeMode: VideoDecodeMode? = nil,
               onProgressChanged: ((Double, Double?) -> Void)? = nil,
               onPlaybackEnded: (() -> Void)? = nil, onPlaybackFailed: (() -> Void)? = nil) {
@@ -208,12 +254,14 @@ final class MPVPlayerController: ObservableObject {
         self.onPlaybackEnded = onPlaybackEnded
         self.onPlaybackFailed = onPlaybackFailed
         let mode = decodeMode ?? VideoDecodeMode.fromStoredValue(UserDefaults.standard.integer(forKey: HawkConfig.PLAY_DECODE_MODE))
-        let key = MPVPlaybackOptions.Identity(url: url, headers: headers, isLive: isLive, decode: mode)
+        let key = MPVPlaybackOptions.Identity(url: url, headers: headers, isLive: isLive, decode: mode, sourceSubtitles: sourceSubtitles)
         guard key != identity || session == nil else { return }
         stop()
         identity = key
         isPreparing = true
         subtitles.reset()
+        self.sourceSubtitles = Array(sourceSubtitles.prefix(64))
+        subtitles.tracks = sourceSubtitleTracks
         subtitleDelay = 0
         errorMessage = nil
         canvas = MPVVideoCanvas(frame: NSRect(x: 0, y: 0, width: 640, height: 360))
@@ -240,14 +288,35 @@ final class MPVPlayerController: ObservableObject {
             currentTimeSeconds = state.time
             durationSeconds = state.duration
             decoder = state.decoder
-            subtitles.isLoading = state.loading && state.tracks.isEmpty
-            if subtitles.tracks != state.tracks {
-                subtitles.tracks = state.tracks
-                applySubtitleSelection()
+            subtitleReady = state.ready
+            subtitles.isLoading = state.loading && state.tracks.isEmpty && sourceSubtitles.isEmpty
+            let nativeIDs = externalNativeIDs
+            let tracks = state.tracks.filter { !nativeIDs.contains($0.id) } + sourceSubtitleTracks
+            if subtitles.tracks != tracks { subtitles.tracks = tracks }
+            subtitles.selectedTrackID = state.selectedID.map { native in
+                loadedSubtitleIDs.first(where: { $0.value == native })?.key ?? native
             }
-            subtitles.selectedTrackID = state.selectedID
+            applySubtitleSelection()
             onProgressChanged?(state.time, state.duration > 0 ? state.duration : nil)
+        case .subtitleLoaded(let id, let nativeID):
+            loadedSubtitleIDs[id] = nativeID
+            externalNativeIDs.insert(nativeID)
+            appliedSubtitleID = nil
+            if pendingSubtitleID == id {
+                pendingSubtitleID = nil
+                subtitles.statusMessage = nil
+            }
+            applySubtitleSelection()
+        case .subtitleFailed(let id):
+            failedSubtitleIDs.insert(id)
+            if pendingSubtitleID == id {
+                pendingSubtitleID = nil
+                subtitles.statusMessage = "来源字幕加载失败，可重新选择重试"
+            }
         case .ended:
+            cancelSubtitleLoad()
+            subtitleReady = false
+            subtitles.statusMessage = nil
             isPlaying = false
             isPreparing = false
             onPlaybackEnded?()
@@ -264,6 +333,13 @@ final class MPVPlayerController: ObservableObject {
         session?.close()
         session = nil
         identity = nil
+        cancelSubtitleLoad()
+        sourceSubtitles = []
+        loadedSubtitleIDs = [:]
+        externalNativeIDs = []
+        failedSubtitleIDs = []
+        subtitleReady = false
+        appliedSubtitleID = nil
         isPlaying = false
         isPreparing = false
         currentTimeSeconds = 0
@@ -290,17 +366,68 @@ final class MPVPlayerController: ObservableObject {
         UserDefaults.standard.set(volume, forKey: HawkConfig.PLAY_VOLUME)
     }
     func selectSubtitle(_ selection: SubtitleSelection) {
+        cancelSubtitleLoad()
         subtitles.selection = selection
+        failedSubtitleIDs.removeAll()
+        subtitles.statusMessage = nil
         applySubtitleSelection()
     }
+
+    private var sourceSubtitleTracks: [SubtitleTrack] {
+        sourceSubtitles.enumerated().map { index, subtitle in
+            SubtitleTrack(id: -(index + 1), title: "来源 · " + subtitle.title, language: subtitle.language)
+        }
+    }
+
+    private func cancelSubtitleLoad() {
+        subtitleTask?.cancel()
+        subtitleTask = nil
+        pendingSubtitleID = nil
+        subtitleRequestToken = UUID()
+    }
+
+    private func setNativeSubtitle(_ id: Int?) {
+        let value = id.map(String.init) ?? "no"
+        guard subtitleReady, appliedSubtitleID != value else { return }
+        appliedSubtitleID = value
+        session?.property("sid", value, playbackCritical: false)
+    }
+
     private func applySubtitleSelection() {
-        let id = subtitles.desiredTrackID()
-        session?.property("sid", id.map(String.init) ?? "no")
+        guard subtitleReady else { return }
+        guard let id = subtitles.desiredTrackID(), id < 0 else {
+            if pendingSubtitleID != nil { cancelSubtitleLoad(); subtitles.statusMessage = nil }
+            setNativeSubtitle(subtitles.desiredTrackID())
+            return
+        }
+        if let nativeID = loadedSubtitleIDs[id] { setNativeSubtitle(nativeID); return }
+        setNativeSubtitle(nil)
+        guard pendingSubtitleID != id, !failedSubtitleIDs.contains(id), sourceSubtitles.indices.contains(-id - 1) else { return }
+        cancelSubtitleLoad()
+        pendingSubtitleID = id
+        subtitles.statusMessage = "正在加载来源字幕…"
+        let subtitle = sourceSubtitles[-id - 1]
+        let token = subtitleRequestToken
+        let renderToken = renderID
+        let loader = loadSubtitle
+        subtitleTask = Task { [weak self] in
+            do {
+                let file = try await loader(subtitle)
+                try Task.checkCancellation()
+                guard let self, self.renderID == renderToken, self.subtitleRequestToken == token else { return }
+                self.session?.addSubtitle(file, subtitle: subtitle, id: id)
+            } catch {
+                guard !Task.isCancelled, let self, self.renderID == renderToken, self.subtitleRequestToken == token else { return }
+                self.failedSubtitleIDs.insert(id)
+                self.pendingSubtitleID = nil
+                self.subtitles.statusMessage = "来源字幕加载失败，可重新选择重试"
+            }
+        }
     }
     func setSubtitleDelay(_ seconds: Double) {
         guard seconds.isFinite else { return }
         subtitleDelay = min(60, max(-60, seconds))
-        session?.property("sub-delay", String(subtitleDelay))
+        session?.property("sub-delay", String(subtitleDelay), playbackCritical: false)
     }
 }
 #else
@@ -318,6 +445,7 @@ enum MPVPlaybackOptions {
         var headers: [String: String]
         var isLive: Bool
         var decode: VideoDecodeMode
+        var sourceSubtitles: [SourceSubtitle] = []
     }
     static func rate(_ value: Double) -> Double {
         value.isFinite && (0.25...4).contains(value) ? value : 1

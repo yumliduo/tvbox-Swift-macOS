@@ -61,6 +61,7 @@ private struct MPVSurface: NSViewRepresentable {
 struct MPVPlayerView: View {
     let urlString: String
     var headers: [String: String] = [:]
+    var sourceSubtitles: [SourceSubtitle] = []
     var startPosition: Double = 0
     var isLive = false
     var onProgressChanged: ((Double, Double?) -> Void)?
@@ -81,6 +82,7 @@ struct MPVPlayerView: View {
             .onAppear { start() }
             .onChange(of: urlString) { _, _ in start() }
             .onChange(of: headers) { _, _ in start() }
+            .onChange(of: sourceSubtitles) { _, _ in start() }
             .onChange(of: decodeRaw) { _, _ in start(position: controller.currentTimeSeconds) }
             .onReceive(controller.$isPlaying) { playing in
                 PlaybackSleepPreventer.shared.setPlaybackActive(playing, owner: sleepOwner)
@@ -93,7 +95,7 @@ struct MPVPlayerView: View {
 
     private func start(position: Double? = nil) {
         guard let url = URL(string: urlString), url.scheme != nil else { return }
-        controller.play(url: url, headers: headers, startPosition: position ?? startPosition, isLive: isLive,
+        controller.play(url: url, headers: headers, sourceSubtitles: sourceSubtitles, startPosition: position ?? startPosition, isLive: isLive,
                         onProgressChanged: onProgressChanged, onPlaybackEnded: onPlaybackEnded,
                         onPlaybackFailed: onPlaybackFailed)
     }

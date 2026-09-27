@@ -8,6 +8,7 @@
 - CMS JSON/XML 数据源（`type=0/1/4`）、分类、搜索、收藏、历史、直播。
 - AVPlayer、VLCKit，以及 macOS 内置 mpv 播放内核；网盘资源支持清晰度选择。
 - mpv 支持 VideoToolbox 硬解、字幕选择与时间偏移；实际解码状态显示在播放控制栏。
+- 当前源码新增来源外挂字幕选择（尚未包含在 1.0.9 安装包中）：解析播放响应的 `subt` / `subtitles` / `subtitle` / `subs` 列表，mpv 字幕菜单按名称显示、按需加载，支持切换和关闭。接口必须实际返回字幕地址；视频画面里的硬字幕无法拆分选择。
 - macOS 内置 CatVod Node Gateway，无需 Android 或单独启动服务。
 - 支持 CatVod `index.js` / `index.js.md5`、Basic Auth、校验、会话复用与自动回收。
 - 夸克、夸父、盘搜等网盘搜索协议；夸克网页登录获取 Cookie 并原生播放。

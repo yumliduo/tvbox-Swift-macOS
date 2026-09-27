@@ -39,6 +39,7 @@ class DetailViewModel: ObservableObject {
     @Published var playUrl: String?
     /// Spider playerContent 返回的播放请求头，供播放器适配层使用。
     @Published var playbackHeaders: [String: String] = [:]
+    @Published var sourceSubtitles: [SourceSubtitle] = []
     /// 续播起始位置（秒）。
     @Published var resumeSeconds: Double = 0
     /// 当前可选清晰度列表。
@@ -279,6 +280,7 @@ class DetailViewModel: ObservableObject {
         playbackResolveTask?.cancel()
         let token = UUID()
         playbackResolveToken = token
+        sourceSubtitles = []
         errorMessage = nil
 
         guard let sourceKey = vodInfo?.sourceKey,
@@ -304,6 +306,7 @@ class DetailViewModel: ObservableObject {
                 )
                 guard !Task.isCancelled, playbackResolveToken == token else { return }
                 playbackHeaders = result.headers
+                sourceSubtitles = result.subtitles
                 if result.qualityOptions.count > 1 {
                     applySpiderQualityOptions(result.qualityOptions, automaticURL: result.url)
                 } else {

@@ -189,6 +189,99 @@ final class MPVPlayerTests: XCTestCase {
         XCTAssertFalse(controller.isPreparing)
     }
 
+    func testSourceSubtitlesLoadSwitchCloseAndSurviveFullscreenWithoutDuplicates() async throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "subtitles", withExtension: "mp4"))
+        let sources = [SourceSubtitle(title: "简体来源", url: URL(string: "https://example.com/zh.srt")!, language: "zh"),
+                       SourceSubtitle(title: "English source", url: URL(string: "https://example.com/en.srt")!, language: "en")]
+        var requests: [URL] = []
+        var files: [URL] = []
+        let controller = MPVPlayerController { subtitle in
+            requests.append(subtitle.url)
+            let file = try SourceSubtitleFile(data: Data("1\n00:00:00,000 --> 00:00:12,000\n\(subtitle.title)\n".utf8), fileExtension: "srt")
+            files.append(file.url)
+            return file
+        }
+        controller.play(url: url, sourceSubtitles: sources, decodeMode: .hardware)
+        defer { controller.stop() }
+        try await waitUntil(controller) { controller.durationSeconds > 0 && controller.subtitles.tracks.count == 4 }
+        controller.pause(true)
+        controller.selectSubtitle(.track(-1))
+        try await waitUntil(controller) { controller.subtitles.selectedTrackID == -1 }
+        XCTAssertEqual(controller.decoder, "videotoolbox")
+        controller.setSubtitleDelay(-2)
+        controller.selectSubtitle(.track(-2))
+        try await waitUntil(controller) { controller.subtitles.selectedTrackID == -2 }
+        XCTAssertEqual(controller.subtitles.tracks.count, 4, "Loaded external tracks must not be listed twice")
+        XCTAssertEqual(requests, sources.map(\.url))
+        controller.selectSubtitle(.track(-1))
+        try await waitUntil(controller) { controller.subtitles.selectedTrackID == -1 }
+        XCTAssertEqual(requests.count, 2, "Switching back should reuse the loaded subtitle")
+        let renderID = controller.renderID
+        controller.play(url: url, sourceSubtitles: sources, decodeMode: .hardware)
+        XCTAssertEqual(controller.renderID, renderID)
+        XCTAssertEqual(controller.subtitleDelay, -2)
+        controller.selectSubtitle(.off)
+        try await waitUntil(controller) { controller.subtitles.selectedTrackID == nil }
+        controller.stop()
+        for _ in 0..<100 {
+            if files.allSatisfy({ !FileManager.default.fileExists(atPath: $0.path) }) { break }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertTrue(files.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) })
+        XCTAssertTrue(controller.subtitles.tracks.isEmpty)
+    }
+
+    func testSourceSubtitleFailureIsNonfatalAndLateDownloadCannotUndoOffOrEpisodeChange() async throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "subtitles", withExtension: "mp4"))
+        let sources = [SourceSubtitle(title: "slow", url: URL(string: "https://example.com/slow.srt")!),
+                       SourceSubtitle(title: "broken", url: URL(string: "https://example.com/broken.srt")!),
+                       SourceSubtitle(title: "invalid format", url: URL(string: "https://example.com/invalid.srt")!)]
+        var completed = 0
+        var failedDownloads = 0
+        var failures = 0
+        let controller = MPVPlayerController { subtitle in
+            if subtitle.title == "broken" {
+                failedDownloads += 1
+                if failedDownloads == 1 { throw SourceSubtitleLoadError.invalidResponse }
+            }
+            if subtitle.title == "slow" { try? await Task.sleep(nanoseconds: 600_000_000) }
+            completed += 1
+            let text = subtitle.title == "invalid format" ? "not a subtitle" : "1\n00:00:00,000 --> 00:00:12,000\nExternal\n"
+            return try SourceSubtitleFile(data: Data(text.utf8), fileExtension: "srt")
+        }
+        controller.play(url: url, sourceSubtitles: sources, decodeMode: .hardware, onPlaybackFailed: { failures += 1 })
+        defer { controller.stop() }
+        try await waitUntil(controller) { controller.durationSeconds > 0 }
+        controller.pause(true)
+        controller.selectSubtitle(.track(-2))
+        try await waitUntil(controller) { controller.subtitles.statusMessage?.contains("失败") == true }
+        XCTAssertNil(controller.errorMessage)
+        controller.selectSubtitle(.track(-2))
+        try await waitUntil(controller) { controller.subtitles.selectedTrackID == -2 }
+        XCTAssertEqual(failedDownloads, 2)
+        XCTAssertNil(controller.subtitles.statusMessage)
+        controller.selectSubtitle(.track(-3))
+        try await waitUntil(controller) { controller.subtitles.statusMessage?.contains("失败") == true }
+        XCTAssertNil(controller.errorMessage)
+        XCTAssertEqual(failures, 0)
+        controller.selectSubtitle(.track(-1))
+        await Task.yield()
+        controller.selectSubtitle(.off)
+        try await Task.sleep(nanoseconds: 800_000_000)
+        XCTAssertGreaterThan(completed, 0)
+        XCTAssertNil(controller.subtitles.selectedTrackID)
+        XCTAssertNil(controller.subtitles.statusMessage)
+        XCTAssertEqual(controller.subtitles.selection, .off)
+        controller.selectSubtitle(.track(-1))
+        await Task.yield()
+        controller.play(url: url, decodeMode: .hardware)
+        try await waitUntil(controller) { controller.durationSeconds > 0 }
+        try await Task.sleep(nanoseconds: 800_000_000)
+        XCTAssertTrue(controller.subtitles.tracks.allSatisfy { $0.id >= 0 })
+        XCTAssertNil(controller.subtitles.statusMessage)
+        XCTAssertNil(controller.errorMessage)
+    }
+
     private func waitUntil(_ controller: MPVPlayerController, _ condition: () -> Bool) async throws {
         for _ in 0..<200 {
             if let error = controller.errorMessage { XCTFail(error); throw MPVTestError.failed }

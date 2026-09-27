@@ -36,6 +36,7 @@ struct DetailView: View {
                     PlayerView(
                         urlString: url,
                         headers: viewModel.playbackHeaders,
+                        sourceSubtitles: viewModel.sourceSubtitles,
                         startPosition: viewModel.currentPlaybackSeconds(),
                         onProgressChanged: handlePlaybackProgress,
                         onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -135,6 +136,7 @@ struct DetailView: View {
                 FullScreenPlayerView(
                     urlString: url,
                     headers: viewModel.playbackHeaders,
+                    sourceSubtitles: viewModel.sourceSubtitles,
                     startPosition: viewModel.currentPlaybackSeconds(),
                     onProgressChanged: handlePlaybackProgress,
                     onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -171,6 +173,7 @@ struct DetailView: View {
                 FullScreenPlayerView(
                     urlString: url,
                     headers: viewModel.playbackHeaders,
+                    sourceSubtitles: viewModel.sourceSubtitles,
                     startPosition: viewModel.currentPlaybackSeconds(),
                     onProgressChanged: handlePlaybackProgress,
                     onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -633,6 +636,7 @@ struct DetailView: View {
 struct FullScreenPlayerView: View {
     let urlString: String
     var headers: [String: String] = [:]
+    var sourceSubtitles: [SourceSubtitle] = []
     var startPosition: Double = 0
     var onProgressChanged: ((Double, Double?) -> Void)? = nil
     var onPlaybackEnded: (() -> Void)? = nil
@@ -651,6 +655,7 @@ struct FullScreenPlayerView: View {
             PlayerView(
                 urlString: urlString,
                 headers: headers,
+                sourceSubtitles: sourceSubtitles,
                 startPosition: startPosition,
                 onProgressChanged: onProgressChanged,
                 onPlaybackEnded: onPlaybackEnded,

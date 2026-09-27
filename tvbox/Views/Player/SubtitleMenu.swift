@@ -9,6 +9,7 @@ struct SubtitleMenu: View {
             choice("自动（优先中文）", selection: .automatic)
             choice("关闭字幕", selection: .off)
             Divider()
+            if let message = state.statusMessage { Text(message) }
             if state.tracks.isEmpty {
                 Text(state.isLoading ? "正在读取字幕轨…" : state.unavailableMessage)
             } else {
