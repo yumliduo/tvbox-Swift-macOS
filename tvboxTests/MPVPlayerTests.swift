@@ -2,6 +2,7 @@ import XCTest
 @testable import TVBox
 #if os(macOS) && canImport(Libmpv)
 import AppKit
+import SwiftUI
 import CoreAudio
 #endif
 
@@ -280,6 +281,115 @@ final class MPVPlayerTests: XCTestCase {
         XCTAssertTrue(controller.subtitles.tracks.allSatisfy { $0.id >= 0 })
         XCTAssertNil(controller.subtitles.statusMessage)
         XCTAssertNil(controller.errorMessage)
+    }
+
+    func testFullscreenReparentAndWindowResizeKeepMetalSurfaceAtCanvasSize() async throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "subtitles", withExtension: "mp4"))
+        let controller = MPVPlayerController()
+        let presentation = ResizePresentation()
+        let host = NSHostingView(rootView: ResizeHarness(url: url, controller: controller, presentation: presentation))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.contentView = host
+        window.orderFront(nil)
+        defer { controller.stop(); window.orderOut(nil); window.contentView = nil }
+        try await waitUntil(controller) { controller.durationSeconds > 0 && controller.canvas.window != nil && controller.subtitles.tracks.count == 2 }
+        let identity = controller.renderID
+        let english = try XCTUnwrap(controller.subtitles.tracks.first { $0.language == "eng" })
+        controller.selectSubtitle(.track(english.id))
+        controller.setSubtitleDelay(-1.5)
+        for paused in [false, true] {
+            controller.pause(paused)
+            try await waitUntil(controller) { controller.isPlaying != paused }
+            for fullScreen in [true, false, true] {
+                presentation.fullScreen = fullScreen
+                for size in [CGSize(width: 1200, height: 800), CGSize(width: 1000, height: 700)] {
+                    window.setContentSize(size)
+                    host.layoutSubtreeIfNeeded()
+                    try await Task.sleep(nanoseconds: 350_000_000)
+                    let canvas = controller.canvas
+                    let expected = fullScreen ? host.bounds.size : CGSize(width: 640, height: 360)
+                    XCTAssertEqual(canvas.bounds.width, expected.width, accuracy: 1, "Canvas must fill fullscreen host")
+                    XCTAssertEqual(canvas.bounds.height, expected.height, accuracy: 1, "Canvas must fill fullscreen host")
+                    XCTAssertEqual(canvas.metalLayer.frame, canvas.bounds, "Metal frame must follow canvas after fullscreen/resize")
+                    let scale = window.backingScaleFactor
+                    XCTAssertEqual(canvas.metalLayer.drawableSize.width, canvas.bounds.width * scale, accuracy: 1,
+                                   "Render width must follow the fullscreen pixel width")
+                    XCTAssertEqual(canvas.metalLayer.drawableSize.height, canvas.bounds.height * scale, accuracy: 1,
+                                   "Render height must follow the fullscreen pixel height")
+                    let renderedSize = await controller.outputSizeForTesting()
+                    XCTAssertEqual(renderedSize.width, canvas.bounds.width * scale, accuracy: 1,
+                                   "mpv must render across the fullscreen width")
+                    XCTAssertEqual(renderedSize.height, canvas.bounds.height * scale, accuracy: 1,
+                                   "mpv must render across the fullscreen height")
+                    XCTAssertEqual(controller.renderID, identity)
+                    XCTAssertEqual(controller.subtitles.selectedTrackID, english.id)
+                    XCTAssertEqual(controller.subtitleDelay, -1.5)
+                    XCTAssertEqual(controller.decoder, "videotoolbox")
+                }
+            }
+        }
+    }
+
+    func testMetalDrawableSizeChangesNotifyNativeObservers() {
+        let layer = MPVMetalLayer()
+        var changes = 0
+        let observation = layer.observe(\.drawableSize) { _, _ in changes += 1 }
+        layer.drawableSize = CGSize(width: 1280, height: 720)
+        withExtendedLifetime(observation) {
+            XCTAssertEqual(changes, 1, "Native resize observer must wake a paused VO")
+        }
+    }
+
+    func testMetalResizeNotificationsAreSafeDuringAndAfterSessionTeardown() async throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "subtitles", withExtension: "mp4"))
+        for _ in 0..<8 {
+            let controller = MPVPlayerController()
+            controller.play(url: url, decodeMode: .hardware)
+            let canvas = controller.canvas
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
+                                  styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView = canvas
+            window.orderFront(nil)
+            defer { controller.stop(); window.orderOut(nil); window.contentView = nil }
+            try await waitUntil(controller) { controller.durationSeconds > 0 }
+            controller.pause(true)
+            canvas.metalLayer.drawableSize = CGSize(width: 1600, height: 900)
+            controller.stop()
+            // Keep the old layer alive while the native queue unregisters KVO,
+            // and after it has destroyed the VO. Late notifications must be inert.
+            for step in 0..<20 {
+                canvas.metalLayer.drawableSize = CGSize(width: 1280 + step * 2, height: 720 + step * 2)
+                try await Task.sleep(nanoseconds: 5_000_000)
+            }
+            XCTAssertEqual(controller.currentTimeSeconds, 0)
+            XCTAssertNil(controller.errorMessage)
+        }
+    }
+
+    private final class ResizePresentation: ObservableObject {
+        @Published var fullScreen = false
+    }
+
+    private struct ResizeHarness: View {
+        let url: URL
+        let controller: MPVPlayerController
+        @ObservedObject var presentation: ResizePresentation
+        var body: some View {
+            ZStack {
+                Color.black
+                if !presentation.fullScreen {
+                    MPVPlayerView(urlString: url.absoluteString, sharedController: controller)
+                        .frame(width: 640, height: 360)
+                }
+            }
+            .overlay {
+                if presentation.fullScreen {
+                    MPVPlayerView(urlString: url.absoluteString, sharedController: controller)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        }
     }
 
     private func waitUntil(_ controller: MPVPlayerController, _ condition: () -> Bool) async throws {

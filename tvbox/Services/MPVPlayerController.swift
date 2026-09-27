@@ -100,6 +100,16 @@ private final class MPVSession: @unchecked Sendable {
         }
     }
 
+    #if DEBUG
+    func outputSizeForTesting() async -> CGSize {
+        await withCheckedContinuation { continuation in
+            queue.async { [self] in
+                continuation.resume(returning: CGSize(width: number("osd-dimensions/w"), height: number("osd-dimensions/h")))
+            }
+        }
+    }
+    #endif
+
     func close() { queue.async { [self] in destroy() } }
 
     private func destroy() {
@@ -347,6 +357,12 @@ final class MPVPlayerController: ObservableObject {
         decoder = ""
         subtitles.reset()
     }
+
+    #if DEBUG
+    func outputSizeForTesting() async -> CGSize {
+        await session?.outputSizeForTesting() ?? .zero
+    }
+    #endif
 
     func togglePause() { session?.command(["cycle", "pause"]) }
     func pause(_ paused: Bool) { session?.property("pause", paused ? "yes" : "no") }

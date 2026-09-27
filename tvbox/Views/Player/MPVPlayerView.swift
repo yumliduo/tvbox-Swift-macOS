@@ -7,7 +7,8 @@ import QuartzCore
 /// Ignore MoltenVK's teardown-only 1×1 resize, which otherwise leaves a black
 /// surface when the same playback session moves between inline and fullscreen.
 final class MPVMetalLayer: CAMetalLayer {
-    override var drawableSize: CGSize {
+    // ObjC dispatch is required for the backend KVO observer, including paused resize.
+    @objc dynamic override var drawableSize: CGSize {
         get { super.drawableSize }
         set { if newValue.width > 1, newValue.height > 1 { super.drawableSize = newValue } }
     }

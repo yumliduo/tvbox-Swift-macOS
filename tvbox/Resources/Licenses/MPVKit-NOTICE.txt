@@ -25,3 +25,9 @@ The driver, original headers, provenance and changes are included in the source
 distribution under Vendor/MPVCoreAudio. MPVCoreAudio-LICENSE.txt contains its
 LGPL 2.1 license; individual file notices continue to apply. This backport is
 specific to MPVKit 1.0.0 and must be reviewed when replacing the library.
+
+TVBox also compiles MPVKit 1.0.0's MoltenVK context with a surface-resize fix.
+Source, required headers, original hashes and changes are included under
+Vendor/MPVMoltenVK. Its mpv context remains LGPL 2.1; included Vulkan-Headers
+v1.3.275 declarations use Apache-2.0 (see Vulkan-Headers-LICENSE.txt).
+This context replacement is specific to the pinned MPVKit/mpv ABI.

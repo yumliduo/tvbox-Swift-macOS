@@ -36,6 +36,7 @@
 		1B266135A7A9D8FA6237F8C9 /* MPVKit-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 0F95CD7B30B883FB12046567 /* MPVKit-LICENSE.txt */; };
 		1C9CB60E52DD5942CA9366A0 /* HomeSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A637BBD8A2F132175636D150 /* HomeSnapshotStore.swift */; };
 		1D0C0D4DD4E22EC319637BDF /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0217E00DE1B92A89B4D7C3 /* SearchViewModel.swift */; };
+		1E5C97DFB2B25458E0E7733B /* Vulkan-Headers-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 413E35CAAA48DD8888C89739 /* Vulkan-Headers-LICENSE.txt */; };
 		205509C747774AFBAB4F9645 /* VodCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F905D1244D5DE13DBCEE170F /* VodCardView.swift */; };
 		20C5D85E3DC215850F9F2AD2 /* MediaAvailabilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC13B23604C6DD0CC77058AC /* MediaAvailabilityService.swift */; };
 		2104A4B08FD996B4D2282243 /* AppStartupRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BE2D74B254B5E8B9AD9924E /* AppStartupRoutingTests.swift */; };
@@ -80,6 +81,7 @@
 		5BB795371C7F7A7C2F10E9C6 /* SourceVerificationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB3DB63B6F897E226104A6F /* SourceVerificationStore.swift */; };
 		5C01C27D67124D2158D0E62A /* ResourceKindFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5392D2FC935EF0C640F8F7 /* ResourceKindFilter.swift */; };
 		5D208E481C6F97783B92E78C /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C92A5E4E28B59BF75D39706 /* HomeViewModel.swift */; };
+		5D3F40F3B72BF348E6002441 /* context_moltenvk.m in Sources */ = {isa = PBXBuildFile; fileRef = C39C25B4541749066658852F /* context_moltenvk.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc -fno-modules -ffile-prefix-map=$(SRCROOT)=."; }; };
 		5E87760B3FDD9FCA2A532221 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E81C1B0D20EE3EFB6B58418B /* ProfileView.swift */; };
 		5EB3F1571D44835F105ED6E9 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F26F870D1B587C1292A189 /* HomeView.swift */; };
 		5FE9E153523D77AB24B16A7E /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016DC7547EE0DE345E510288 /* Extensions.swift */; };
@@ -184,6 +186,7 @@
 		D290C988E9EC8D80320D3EED /* PlayerGestureLayerZoomClampingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5767F0D984BBEFBB9101110 /* PlayerGestureLayerZoomClampingTests.swift */; };
 		D3B09E23F0DFA6298CCE6B40 /* PlayerGestureLayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9777D260D16B089DA2DACB22 /* PlayerGestureLayerTests.swift */; };
 		D3D535288AF8497F786DFBD4 /* SourceVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811647F5CDB1BE648F91A4B8 /* SourceVerificationTests.swift */; };
+		D4EC08C2D62ECBDD73A1B43A /* Vulkan-Headers-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 413E35CAAA48DD8888C89739 /* Vulkan-Headers-LICENSE.txt */; };
 		D6F4B32786BF79CBF6AB77EA /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB6B7E1747D5E2C29B54066 /* AppConfig.swift */; };
 		D83250670EE31C83B68D52CB /* HomeSourceRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4E5D54E0FA2FA781AF92F34 /* HomeSourceRecoveryTests.swift */; };
 		D832A8693DAEE5104952EC38 /* ResourceListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330D3022008C33DEDA1154F7 /* ResourceListViewModel.swift */; };
@@ -273,6 +276,7 @@
 		3A89B850831ED48AB8869FD9 /* HomeBrowseFacet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBrowseFacet.swift; sourceTree = "<group>"; };
 		3EA052FA56EA38310DF6CA2C /* CMSXMLResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CMSXMLResponseParser.swift; sourceTree = "<group>"; };
 		3EE159FC0B6328166F56CE36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		413E35CAAA48DD8888C89739 /* Vulkan-Headers-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Vulkan-Headers-LICENSE.txt"; sourceTree = "<group>"; };
 		4614ADD55A9FF8995B61846D /* HomeLoadBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLoadBudgetTests.swift; sourceTree = "<group>"; };
 		479637E2A64C9F821CD3BD1A /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		4D52968C6660D33A372F1B1F /* CloudDriveCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveCredentialStore.swift; sourceTree = "<group>"; };
@@ -329,6 +333,7 @@
 		BB87D0D74C7CB27B06EBBC4A /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		BFD32454522C32D876921A30 /* CacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheStore.swift; sourceTree = "<group>"; };
 		C3756798FAD2BF76EE9BDC19 /* HomeSourceProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSourceProtocolTests.swift; sourceTree = "<group>"; };
+		C39C25B4541749066658852F /* context_moltenvk.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = context_moltenvk.m; sourceTree = "<group>"; };
 		C4414F51E9AA6398F0F38D70 /* ConfigInspectionResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigInspectionResultView.swift; sourceTree = "<group>"; };
 		C9D8152099812991573CE895 /* SpiderGatewayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiderGatewayTests.swift; sourceTree = "<group>"; };
 		CC13B23604C6DD0CC77058AC /* MediaAvailabilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAvailabilityService.swift; sourceTree = "<group>"; };
@@ -565,6 +570,7 @@
 				8B5798117EA20DF680EFD3CA /* tvbox */,
 				0F55DB9D84FD47BF11F99DE5 /* tvbox-Tests */,
 				2CDB960D512B40AF659C0811 /* tvboxTests */,
+				F61A6B0E528965176665AB6A /* vulkan */,
 				AF26E3B8CC541C336E1ECDDB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -654,6 +660,7 @@
 				67D65A165CE04B899A8F346A /* MPVCoreAudio-LICENSE.txt */,
 				0F95CD7B30B883FB12046567 /* MPVKit-LICENSE.txt */,
 				71601EB0D9A376320C638228 /* MPVKit-NOTICE.txt */,
+				413E35CAAA48DD8888C89739 /* Vulkan-Headers-LICENSE.txt */,
 			);
 			path = Licenses;
 			sourceTree = "<group>";
@@ -678,6 +685,15 @@
 				0A7F257F6B68F93D58E8C032 /* SettingsViewModel.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		F61A6B0E528965176665AB6A /* vulkan */ = {
+			isa = PBXGroup;
+			children = (
+				C39C25B4541749066658852F /* context_moltenvk.m */,
+			);
+			name = vulkan;
+			path = Vendor/MPVMoltenVK/video/out/vulkan;
 			sourceTree = "<group>";
 		};
 		FD7DFF54835B377CB9BF5A82 /* Home */ = {
@@ -849,6 +865,7 @@
 				CAB1083924BEE22AC83F014A /* MPVCoreAudio-LICENSE.txt in Resources */,
 				EB74E2FAE87CF0E9B8DF048D /* MPVKit-LICENSE.txt in Resources */,
 				6F47D9C6B04BD5DEAB61D4C4 /* MPVKit-NOTICE.txt in Resources */,
+				1E5C97DFB2B25458E0E7733B /* Vulkan-Headers-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -869,6 +886,7 @@
 				CC08347DED5A14CA1C389BD4 /* MPVCoreAudio-LICENSE.txt in Resources */,
 				1B266135A7A9D8FA6237F8C9 /* MPVKit-LICENSE.txt in Resources */,
 				25B021986997D9FD8BD0D4E8 /* MPVKit-NOTICE.txt in Resources */,
+				D4EC08C2D62ECBDD73A1B43A /* Vulkan-Headers-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1158,6 +1176,7 @@
 				217BB4F40B9348F439749C70 /* VodCardView.swift in Sources */,
 				74D54978A79B511FDE79524D /* VodInfo.swift in Sources */,
 				8D7E91A2E8E292367DD39216 /* ao_coreaudio.c in Sources */,
+				5D3F40F3B72BF348E6002441 /* context_moltenvk.m in Sources */,
 				45D7A96C98872769AE01C131 /* tvboxApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1189,7 +1208,7 @@
 				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio $(SRCROOT)/Vendor/MPVMoltenVK $(SRCROOT)/Vendor/MPVMoltenVK/include $(SRCROOT)/Vendor/MPVCoreAudio/options";
 				INFOPLIST_FILE = tvbox/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1272,7 +1291,7 @@
 				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio $(SRCROOT)/Vendor/MPVMoltenVK $(SRCROOT)/Vendor/MPVMoltenVK/include $(SRCROOT)/Vendor/MPVCoreAudio/options";
 				INFOPLIST_FILE = tvbox/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -1,0 +1,99 @@
+{
+  "mpv_tag": "v0.41.0",
+  "mpvkit_tag": "1.0.0",
+  "vulkan_headers_tag": "v1.3.275",
+  "files": {
+    "video/out/gpu/context.h": {
+      "project": "mpv",
+      "sha256": "745cb21f50a52e2560e59e9d45189b7f6863168c97759b2a4a4969cc39ae045c"
+    },
+    "video/out/gpu/ra.h": {
+      "project": "mpv",
+      "sha256": "9c1fa2553bd88f61737ee2dab26f34c88fec319e202bc8d2caa391b766d88f5d"
+    },
+    "video/out/vulkan/common.h": {
+      "project": "mpv",
+      "sha256": "350f12a44071280a58fd8ec143bd1e244a755ff6cfb7b5cd92d703af2889dcc9"
+    },
+    "video/out/vo.h": {
+      "project": "mpv",
+      "sha256": "4fc330aa6d9f2aa2959a9ee4d8a09272db0177a391e758848f721807e3c176c5"
+    },
+    "video/out/vulkan/context.h": {
+      "project": "mpv",
+      "sha256": "ced60a4afecd955e360b64000dd75478aa6ed6e5d46244e7f12a6c9481141dc9"
+    },
+    "video/out/vulkan/utils.h": {
+      "project": "mpv",
+      "sha256": "195e86b36ba98197cd2fed29c2302df37cc07c4d9af9f356e09ff7bc6401eaff"
+    },
+    "options/options.h": {
+      "project": "mpv",
+      "sha256": "7f211800979df210d7adbe1c6859938d7364f243dd5c001e70fcdb81d2138ffb"
+    },
+    "video/csputils.h": {
+      "project": "mpv",
+      "sha256": "0e99466de69ff55297c35d03eb606a6caf3cd744bf17ec00646c8985741b84b6"
+    },
+    "video/img_format.h": {
+      "project": "mpv",
+      "sha256": "8e520589f54e8641522259e2de2fbf8570a36999bd7926216fb7e095f081a1d3"
+    },
+    "player/clipboard/clipboard.h": {
+      "project": "mpv",
+      "sha256": "869b6dbdb2a504081f2dc182fec9807e1ddba57f86ec0638750b2a94aec9f7f2"
+    },
+    "osdep/endian.h": {
+      "project": "mpv",
+      "sha256": "1e43d1c2b863ed976bcd20d29ba6ed94854031ed85e47ae3045bb7becaf71f43"
+    },
+    "video/out/vulkan/context_moltenvk.m": {
+      "project": "mpvkit",
+      "sha256": "1b12bc4fc75de41be5f7a08ecb15c816ea19f2c582f4c9b61d292e34373aa40b"
+    },
+    "include/vk_video/vulkan_video_codec_h264std.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "072ee6eac80e73d93bb4bfe0059f99e581fc8b55b1437236185bb4ff377914b1"
+    },
+    "include/vk_video/vulkan_video_codec_h265std.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "0cbdfd6c45ee8ca902e9c961cd7e49a4d601d443ea0ef2a60a8496b127ed397c"
+    },
+    "include/vk_video/vulkan_video_codec_h264std_decode.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "e1708b3996a740eeedb79f51d0f0e379f9bcae13566538375acaf73301023b58"
+    },
+    "include/vk_video/vulkan_video_codec_h264std_encode.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "052a6e357be8d88bf4be0db1b3da5a9cc1a6011cf4b3533759ff588e1e26f9f1"
+    },
+    "include/vk_video/vulkan_video_codecs_common.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "78cf3c99d3d57afa7ab1782ec6018b4bcdbe273f2843d76e3375282db875b71e"
+    },
+    "include/vk_video/vulkan_video_codec_h265std_encode.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "7239f9f4e811546639111e562a8be1ec73ad5bef1c23d5fad80889f35e125e9c"
+    },
+    "include/vk_video/vulkan_video_codec_h265std_decode.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "800946aa19d83d305d504e2e4141bc938f989e0cf8872cef97480238eefef1ea"
+    },
+    "include/vulkan/vulkan.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "52297513cc6b6cc8db2921aa849f72e3f55d678b3a58a2c3eb297c02ded7a837"
+    },
+    "include/vulkan/vk_platform.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "c4cabbcf699c90cde344095ae54da9435d117951aad114ba3a540c5997d7906f"
+    },
+    "include/vulkan/vulkan_core.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "3dba3ef8adaff8f24e9080e74d365fc64b5fe53ec8bda607c29c103e15888fcf"
+    },
+    "include/vulkan/vulkan_metal.h": {
+      "project": "Vulkan-Headers",
+      "sha256": "b4e251c3647c6e6592b66ced21539b8e8650218e54988ec91edb842bbe68884f"
+    }
+  }
+}

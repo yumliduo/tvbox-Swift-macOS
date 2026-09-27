@@ -93,6 +93,8 @@ targets:
       - package: VLCKitSPM
         product: VLCKitSPM
     sources:
+      - path: Vendor/MPVMoltenVK/video/out/vulkan/context_moltenvk.m
+        compilerFlags: "-fno-objc-arc -fno-modules -ffile-prefix-map=$(SRCROOT)=."
       - path: Vendor/MPVCoreAudio/audio/out/ao_coreaudio.c
         compilerFlags: "-ffile-prefix-map=$(SRCROOT)=."
       - path: tvbox
@@ -108,7 +110,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tvbox.app.macos
-        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio"
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio $(SRCROOT)/Vendor/MPVMoltenVK $(SRCROOT)/Vendor/MPVMoltenVK/include $(SRCROOT)/Vendor/MPVCoreAudio/options"
         INFOPLIST_FILE: tvbox/Info.plist
         GENERATE_INFOPLIST_FILE: YES
         CURRENT_PROJECT_VERSION: "8"
