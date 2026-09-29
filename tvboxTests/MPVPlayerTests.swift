@@ -367,6 +367,134 @@ final class MPVPlayerTests: XCTestCase {
         }
     }
 
+    func testKeyboardActionsIgnoreModifiedAndUnrelatedKeys() throws {
+        let mappings: [(UInt16, MPVKeyboardAction)] = [
+            (49, .togglePause), (123, .seekBackward), (124, .seekForward),
+            (125, .volumeDown), (126, .volumeUp)
+        ]
+        for (key, action) in mappings {
+            XCTAssertEqual(MPVKeyboardAction(event: keyEvent(key)), action)
+            for modifier: NSEvent.ModifierFlags in [.command, .control, .option, .shift] {
+                XCTAssertNil(MPVKeyboardAction(event: keyEvent(key, modifiers: modifier)))
+            }
+        }
+        XCTAssertNil(MPVKeyboardAction(event: keyEvent(0)))
+    }
+
+    func testKeyboardRoutingRespectsWindowFocusEditingVisibilityAndTeardown() async throws {
+        let canvas = MPVVideoCanvas(frame: NSRect(x: 0, y: 0, width: 640, height: 360))
+        let window = KeyboardTestWindow(contentRect: canvas.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        let container = NSView(frame: canvas.frame)
+        container.addSubview(canvas)
+        window.contentView = container
+        window.makeKeyAndOrderFront(nil)
+        defer { window.orderOut(nil); window.contentView = nil }
+        var actions: [MPVKeyboardAction] = []
+        canvas.onKeyboardAction = { actions.append($0) }
+        NSApp.sendEvent(keyEvent(49, window: window))
+        NSApp.sendEvent(keyEvent(49, window: window, repeated: true))
+        XCTAssertEqual(actions, [.togglePause], "Holding Space must not toggle repeatedly")
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(126)), "Other windows must retain their keys")
+
+        window.hasKeyboardFocus = false
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(49, window: window)))
+        window.hasKeyboardFocus = true
+        let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 100, height: 30))
+        container.addSubview(text)
+        window.makeFirstResponder(text)
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(49, window: window)))
+        let slider = NSSlider(value: 0.5, minValue: 0, maxValue: 1, target: nil, action: nil)
+        container.addSubview(slider)
+        window.makeFirstResponder(slider)
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(126, window: window)), "Focused controls retain native arrow handling")
+        canvas.focusForPlayback()
+        XCTAssertTrue(window.firstResponder === canvas, "Clicking the video must move focus out of sidebar or slider controls")
+        NSApp.sendEvent(keyEvent(126, window: window))
+        XCTAssertEqual(actions, [.togglePause, .volumeUp])
+        window.makeFirstResponder(text)
+        canvas.layoutSubtreeIfNeeded()
+        XCTAssertTrue(window.firstResponder === text, "Layout updates must not steal editing focus")
+        window.makeFirstResponder(nil)
+        canvas.isHidden = true
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(126, window: window)))
+        canvas.isHidden = false
+        let sheet = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
+        window.beginSheet(sheet, completionHandler: nil)
+        XCTAssertFalse(canvas.handleKeyboardEvent(keyEvent(49, window: window)))
+        window.endSheet(sheet)
+        sheet.orderOut(nil)
+        canvas.removeFromSuperview()
+        NSApp.sendEvent(keyEvent(49, window: window))
+        XCTAssertEqual(actions, [.togglePause, .volumeUp], "Detached playback must remove the monitor")
+    }
+
+    func testKeyboardControlsRealPlaybackAndRemainSingleAfterFullscreenReparent() async throws {
+        let defaults = UserDefaults.standard
+        let oldStep = defaults.object(forKey: HawkConfig.PLAY_TIME_STEP)
+        let oldVolume = defaults.object(forKey: HawkConfig.PLAY_VOLUME)
+        defaults.set(3, forKey: HawkConfig.PLAY_TIME_STEP)
+        defer {
+            defaults.set(oldStep, forKey: HawkConfig.PLAY_TIME_STEP)
+            defaults.set(oldVolume, forKey: HawkConfig.PLAY_VOLUME)
+        }
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "subtitles", withExtension: "mp4"))
+        let controller = MPVPlayerController()
+        let presentation = ResizePresentation()
+        let host = NSHostingView(rootView: ResizeHarness(url: url, controller: controller, presentation: presentation))
+        let window = KeyboardTestWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 700),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.makeKeyAndOrderFront(nil)
+        defer { controller.stop(); window.orderOut(nil); window.contentView = nil }
+        try await waitUntil(controller) { controller.durationSeconds > 0 && controller.isPlaying }
+        window.makeFirstResponder(nil)
+        NSApp.sendEvent(keyEvent(49, window: window))
+        try await waitUntil(controller) { !controller.isPlaying }
+        controller.seek(to: 2)
+        try await waitUntil(controller) { abs(controller.currentTimeSeconds - 2) < 0.2 }
+        NSApp.sendEvent(keyEvent(124, window: window))
+        try await waitUntil(controller) { abs(controller.currentTimeSeconds - 5) < 0.2 }
+        NSApp.sendEvent(keyEvent(123, window: window))
+        try await waitUntil(controller) { abs(controller.currentTimeSeconds - 2) < 0.2 }
+        controller.setVolume(100)
+        for fullscreen in [true, false, true, false] {
+            presentation.fullScreen = fullscreen
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(nanoseconds: 250_000_000)
+            window.makeFirstResponder(nil)
+            NSApp.sendEvent(keyEvent(126, window: window))
+            XCTAssertEqual(controller.volume, 105, "Fullscreen must have exactly one keyboard handler")
+            NSApp.sendEvent(keyEvent(125, window: window))
+            XCTAssertEqual(controller.volume, 100)
+        }
+        controller.setVolume(198)
+        NSApp.sendEvent(keyEvent(126, window: window))
+        XCTAssertEqual(controller.volume, 200)
+        controller.setVolume(2)
+        NSApp.sendEvent(keyEvent(125, window: window))
+        XCTAssertEqual(controller.volume, 0)
+        NSApp.sendEvent(keyEvent(49, window: window))
+        try await waitUntil(controller) { controller.isPlaying }
+    }
+
+    // XCTest hosts are not guaranteed foreground activation. Model only this
+    // OS-owned flag; event dispatch, responder guards, view lifecycle and mpv
+    // remain real. Installed-app verification covers actual keyboard focus.
+    private final class KeyboardTestWindow: NSWindow {
+        var hasKeyboardFocus = true
+        override var isKeyWindow: Bool { hasKeyboardFocus }
+    }
+
+    private func keyEvent(_ code: UInt16, window: NSWindow? = nil,
+                          modifiers: NSEvent.ModifierFlags = [], repeated: Bool = false) -> NSEvent {
+        NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers,
+                         timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window?.windowNumber ?? 0,
+                         context: nil, characters: code == 49 ? " " : "", charactersIgnoringModifiers: code == 49 ? " " : "",
+                         isARepeat: repeated, keyCode: code)!
+    }
+
     private final class ResizePresentation: ObservableObject {
         @Published var fullScreen = false
     }

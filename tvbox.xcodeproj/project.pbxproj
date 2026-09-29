@@ -91,6 +91,7 @@
 		63D4B7D81433F5DFCA92C7C2 /* CloudDriveSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DA90872FB1636E1582E770 /* CloudDriveSettingsView.swift */; };
 		640316BBE978DC8256605DB8 /* CloudDriveLoginCredentialExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867925306B542157E68AD092 /* CloudDriveLoginCredentialExtractorTests.swift */; };
 		6440077E1CEE48CA3D26E12F /* SubtitleControlsSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350CC86FB49CFBF93FA0B4FE /* SubtitleControlsSnapshotTests.swift */; };
+		64CAE63B28190DBA68810B7A /* MPVKeyboardAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5311C411BDBF593035CDFEF /* MPVKeyboardAction.swift */; };
 		65E8D519BEBAAEDC44446DC6 /* SourceVerificationProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21AF18B303C02A1E0DCBF3D2 /* SourceVerificationProbe.swift */; };
 		6765DB90DA62DBEE185104F7 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131429F267F6A418C282831A /* DetailView.swift */; };
 		6823F2E7A017C2A4337EC11E /* SearchResultGroupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC1D10F2D7C04F43C7FD550 /* SearchResultGroupTests.swift */; };
@@ -140,6 +141,7 @@
 		956269C3F41CFBABBD1E8AA2 /* HomeSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A637BBD8A2F132175636D150 /* HomeSnapshotStore.swift */; };
 		960791F95D922E104CD855F8 /* VLCKitSPM in Frameworks */ = {isa = PBXBuildFile; productRef = 1C6BDE11E85522F286D15861 /* VLCKitSPM */; };
 		969EE3F9ACF8E1A3026CC37F /* DetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D8B3DC7E0B9C01A294C47FC /* DetailViewModel.swift */; };
+		970D7FE3652792E336637CBB /* MPVKeyboardAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5311C411BDBF593035CDFEF /* MPVKeyboardAction.swift */; };
 		972F697AF224E551FC240758 /* ResourceListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58FCF3C9988C12640D497D3 /* ResourceListViewModelTests.swift */; };
 		97B3904616111CE93232423E /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F26F870D1B587C1292A189 /* HomeView.swift */; };
 		98224E10D4F46053827E522D /* SubtitleMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38465140066828E6AB74A9F3 /* SubtitleMenu.swift */; };
@@ -335,6 +337,7 @@
 		C3756798FAD2BF76EE9BDC19 /* HomeSourceProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSourceProtocolTests.swift; sourceTree = "<group>"; };
 		C39C25B4541749066658852F /* context_moltenvk.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = context_moltenvk.m; sourceTree = "<group>"; };
 		C4414F51E9AA6398F0F38D70 /* ConfigInspectionResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigInspectionResultView.swift; sourceTree = "<group>"; };
+		C5311C411BDBF593035CDFEF /* MPVKeyboardAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVKeyboardAction.swift; sourceTree = "<group>"; };
 		C9D8152099812991573CE895 /* SpiderGatewayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiderGatewayTests.swift; sourceTree = "<group>"; };
 		CC13B23604C6DD0CC77058AC /* MediaAvailabilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAvailabilityService.swift; sourceTree = "<group>"; };
 		CE83E7D21400ACFE3BC6ED38 /* LiveModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveModels.swift; sourceTree = "<group>"; };
@@ -430,6 +433,7 @@
 			isa = PBXGroup;
 			children = (
 				7A12D4549628C3FFBA736748 /* LivePlayerGestureLayer.swift */,
+				C5311C411BDBF593035CDFEF /* MPVKeyboardAction.swift */,
 				DBD695B842F75080D861387A /* MPVPlayerView.swift */,
 				E7491D05031A04661718FF52 /* PlayerGestureLayer.swift */,
 				BB87D0D74C7CB27B06EBBC4A /* PlayerView.swift */,
@@ -1025,6 +1029,7 @@
 				7D0F71AA151C3F8CE8EB962B /* LivePlayerGestureLayer.swift in Sources */,
 				267A5751434568E302E0C902 /* LiveView.swift in Sources */,
 				19291FACD401CDE0E6E2963E /* LiveViewModel.swift in Sources */,
+				970D7FE3652792E336637CBB /* MPVKeyboardAction.swift in Sources */,
 				E4A22CB76881EAF0BB9ED8B3 /* MPVPlayerController.swift in Sources */,
 				5409E67C023B8F0B2FA3CE25 /* MPVPlayerView.swift in Sources */,
 				CCEC7F077D403E7A89792453 /* MediaAvailabilityService.swift in Sources */,
@@ -1137,6 +1142,7 @@
 				ED9018DE19A38BEF616B71A3 /* LivePlayerGestureLayer.swift in Sources */,
 				530B86138F2A404353CE37AB /* LiveView.swift in Sources */,
 				9FCA2C5CC08A9369EA53B130 /* LiveViewModel.swift in Sources */,
+				64CAE63B28190DBA68810B7A /* MPVKeyboardAction.swift in Sources */,
 				7F87F905411FE92AB2188EA3 /* MPVPlayerController.swift in Sources */,
 				2155DB8231C7B501207A7E1C /* MPVPlayerView.swift in Sources */,
 				20C5D85E3DC215850F9F2AD2 /* MediaAvailabilityService.swift in Sources */,
@@ -1205,7 +1211,7 @@
 				CODE_SIGN_ENTITLEMENTS = "tvbox/tvbox-macOS.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio $(SRCROOT)/Vendor/MPVMoltenVK $(SRCROOT)/Vendor/MPVMoltenVK/include $(SRCROOT)/Vendor/MPVCoreAudio/options";
@@ -1215,7 +1221,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tvbox.app.macos;
 				PRODUCT_NAME = TVBox;
 				SDKROOT = macosx;
@@ -1288,7 +1294,7 @@
 				CODE_SIGN_ENTITLEMENTS = "tvbox/tvbox-macOS.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/Vendor/MPVCoreAudio $(SRCROOT)/Vendor/MPVMoltenVK $(SRCROOT)/Vendor/MPVMoltenVK/include $(SRCROOT)/Vendor/MPVCoreAudio/options";
@@ -1298,7 +1304,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.9;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tvbox.app.macos;
 				PRODUCT_NAME = TVBox;
 				SDKROOT = macosx;

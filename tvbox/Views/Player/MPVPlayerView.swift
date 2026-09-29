@@ -16,6 +16,12 @@ final class MPVMetalLayer: CAMetalLayer {
 
 final class MPVVideoCanvas: NSView {
     let metalLayer = MPVMetalLayer()
+    var onKeyboardAction: ((MPVKeyboardAction) -> Void)?
+    private var keyboardMonitor: Any?
+
+    deinit {
+        if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
+    }
     override init(frame: NSRect) {
         super.init(frame: frame)
         metalLayer.backgroundColor = NSColor.black.cgColor
@@ -25,9 +31,36 @@ final class MPVVideoCanvas: NSView {
         resizeSurface()
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override var acceptsFirstResponder: Bool { true }
+    func focusForPlayback() { window?.makeFirstResponder(self) }
     override func layout() { super.layout(); resizeSurface() }
     override func viewDidChangeBackingProperties() { super.viewDidChangeBackingProperties(); resizeSurface() }
-    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); resizeSurface() }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        resizeSurface()
+        if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
+        keyboardMonitor = nil
+        guard window != nil else { return }
+        keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.handleKeyboardEvent(event) else { return event }
+            return nil
+        }
+    }
+
+    /// Scoped to the visible playback surface, including when it is reparented
+    /// for fullscreen. Never steals first responder from text fields or controls.
+    func handleKeyboardEvent(_ event: NSEvent) -> Bool {
+        guard let window, window.isKeyWindow, event.window === window,
+              window.attachedSheet == nil, NSApp.modalWindow == nil,
+              !isHiddenOrHasHiddenAncestor, !visibleRect.isEmpty,
+              !(window.firstResponder is NSTextView),
+              !(window.firstResponder is NSControl),
+              let action = MPVKeyboardAction(event: event),
+              let onKeyboardAction else { return false }
+        // Holding Space must not alternate pause/play on every key repeat.
+        if action != .togglePause || !event.isARepeat { onKeyboardAction(action) }
+        return true
+    }
     private func resizeSurface() {
         let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 1
         CATransaction.begin()
@@ -41,9 +74,11 @@ final class MPVVideoCanvas: NSView {
 
 private struct MPVSurface: NSViewRepresentable {
     @ObservedObject var controller: MPVPlayerController
+    var onKeyboardAction: (MPVKeyboardAction) -> Void
     func makeNSView(context: Context) -> NSView { NSView() }
     func updateNSView(_ container: NSView, context: Context) {
         let canvas = controller.canvas
+        canvas.onKeyboardAction = onKeyboardAction
         if canvas.superview !== container {
             container.subviews.forEach { $0.removeFromSuperview() }
             canvas.removeFromSuperview()
@@ -55,7 +90,10 @@ private struct MPVSurface: NSViewRepresentable {
     static func dismantleNSView(_ container: NSView, coordinator: ()) {
         // Only detach views still owned by this container; fullscreen may have
         // already reparented the canvas into its new container.
-        container.subviews.forEach { $0.removeFromSuperview() }
+        container.subviews.forEach {
+            ($0 as? MPVVideoCanvas)?.onKeyboardAction = nil
+            $0.removeFromSuperview()
+        }
     }
 }
 
@@ -118,7 +156,7 @@ private struct MPVPlayerContent: View {
     var body: some View {
         ZStack {
             Color.black
-            MPVSurface(controller: controller)
+            MPVSurface(controller: controller, onKeyboardAction: handleKeyboardAction)
             if controller.isPreparing { ProgressView().tint(.white).allowsHitTesting(false) }
             if let message = controller.errorMessage {
                 VStack(spacing: 12) {
@@ -147,51 +185,30 @@ private struct MPVPlayerContent: View {
                                 Text(time(controller.durationSeconds))
                             }.font(.caption.monospacedDigit())
                         }
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                Menu {
-                                    ForEach([0.5, 0.75, 1, 1.25, 1.5, 2], id: \.self) { rate in
-                                        Button("\(rate.formatted())×") { controller.setRate(rate) }
-                                    }
-                                } label: { Text("\(controller.playbackRate.formatted())×") }
-                                SubtitleMenu(state: controller.subtitles, onSelect: controller.selectSubtitle)
-                                Menu {
-                                    Text("正数延后，负数提前；仅影响独立字幕轨")
-                                    Button("提前 0.5 秒") { controller.setSubtitleDelay(controller.subtitleDelay - 0.5) }
-                                    Button("延后 0.5 秒") { controller.setSubtitleDelay(controller.subtitleDelay + 0.5) }
-                                    Button("重置为 0 秒") { controller.setSubtitleDelay(0) }
-                                } label: { Text("字幕偏移 \(controller.subtitleDelay.formatted())s") }
-                                if !isLive {
-                                    Button { controller.seek(to: controller.currentTimeSeconds - Double(max(1, seekStep))) } label: {
-                                        Image(systemName: "gobackward.10")
-                                    }.accessibilityLabel("快退")
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 20) {
+                                playbackOptions.frame(maxWidth: .infinity, alignment: .leading)
+                                transportControls
+                                volumeControls.frame(maxWidth: .infinity, alignment: .trailing)
+                            }.frame(minWidth: 760)
+                            VStack(spacing: 12) {
+                                HStack(spacing: 12) {
+                                    transportControls
+                                    Spacer(minLength: 8)
+                                    volumeControls
                                 }
-                                Button { controller.togglePause(); wakeControls() } label: {
-                                    Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
-                                }.accessibilityLabel(controller.isPlaying ? "暂停" : "播放")
-                                if !isLive {
-                                    Button { controller.seek(to: controller.currentTimeSeconds + Double(max(1, seekStep))) } label: {
-                                        Image(systemName: "goforward.10")
-                                    }.accessibilityLabel("快进")
-                                }
-                                if canPlayNext { Button(action: { onPlayNext?() }) { Image(systemName: "forward.end.fill") }.accessibilityLabel("下一集") }
-                                Spacer(minLength: 0)
-                                Image(systemName: "speaker.wave.2.fill")
-                                Slider(value: Binding(get: { controller.volume }, set: controller.setVolume), in: 0...200)
-                                    .frame(width: 90).accessibilityLabel("音量")
-                                if let onToggleFullScreen {
-                                    Button(action: onToggleFullScreen) { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                                        .accessibilityLabel("切换全屏")
-                                }
-                            }.buttonStyle(.plain).font(.system(size: 12))
+                                ScrollView(.horizontal, showsIndicators: false) { playbackOptions }
+                            }
                         }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 13))
                     }.padding(16).background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 16))
                 }.padding(16)
             }
         }
         .foregroundStyle(.white)
         .contentShape(Rectangle())
-        .onTapGesture { wakeControls() }
+        .onTapGesture { controller.canvas.focusForPlayback(); wakeControls() }
         .onContinuousHover { phase in if case .active = phase { wakeControls() } }
         .task(id: interaction) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
@@ -199,6 +216,73 @@ private struct MPVPlayerContent: View {
             showControls = false
         }
     }
+    private var playbackOptions: some View {
+        HStack(spacing: 16) {
+            Menu {
+                ForEach([0.5, 0.75, 1, 1.25, 1.5, 2], id: \.self) { rate in
+                    Button("\(rate.formatted())×") { controller.setRate(rate) }
+                }
+            } label: { Text("\(controller.playbackRate.formatted())×") }
+            SubtitleMenu(state: controller.subtitles, onSelect: controller.selectSubtitle)
+            Menu {
+                Text("正数延后，负数提前；仅影响独立字幕轨")
+                Button("提前 0.5 秒") { controller.setSubtitleDelay(controller.subtitleDelay - 0.5) }
+                Button("延后 0.5 秒") { controller.setSubtitleDelay(controller.subtitleDelay + 0.5) }
+                Button("重置为 0 秒") { controller.setSubtitleDelay(0) }
+            } label: { Text("字幕偏移 \(controller.subtitleDelay.formatted())s") }
+        }.fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var transportControls: some View {
+        HStack(spacing: 16) {
+            if !isLive {
+                Button { handleKeyboardAction(.seekBackward) } label: {
+                    Image(systemName: "gobackward")
+                }.accessibilityLabel("快退").help("快退 \(max(1, seekStep)) 秒（←）")
+            }
+            Button { handleKeyboardAction(.togglePause) } label: {
+                Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 18)).frame(width: 28, height: 28)
+            }.accessibilityLabel(controller.isPlaying ? "暂停" : "播放").help("播放 / 暂停（空格）")
+            if !isLive {
+                Button { handleKeyboardAction(.seekForward) } label: {
+                    Image(systemName: "goforward")
+                }.accessibilityLabel("快进").help("快进 \(max(1, seekStep)) 秒（→）")
+            }
+            if canPlayNext {
+                Button { onPlayNext?() } label: { Image(systemName: "forward.end.fill") }
+                    .accessibilityLabel("下一集")
+            }
+        }.fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var volumeControls: some View {
+        HStack(spacing: 10) {
+            Image(systemName: controller.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+            Slider(value: Binding(get: { controller.volume }, set: controller.setVolume), in: 0...200)
+                .frame(width: 90).accessibilityLabel("音量").help("音量（↑ / ↓，每次 5%）")
+            Text("\(Int(controller.volume))%")
+                .monospacedDigit().frame(width: 38, alignment: .trailing)
+            if let onToggleFullScreen {
+                Button(action: onToggleFullScreen) { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                    .accessibilityLabel("切换全屏").help("切换全屏")
+            }
+        }.fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func handleKeyboardAction(_ action: MPVKeyboardAction) {
+        switch action {
+        case .togglePause: controller.togglePause()
+        case .seekBackward:
+            if !isLive { controller.seek(to: controller.currentTimeSeconds - Double(max(1, seekStep))) }
+        case .seekForward:
+            if !isLive { controller.seek(to: controller.currentTimeSeconds + Double(max(1, seekStep))) }
+        case .volumeDown: controller.setVolume(controller.volume - 5)
+        case .volumeUp: controller.setVolume(controller.volume + 5)
+        }
+        wakeControls()
+    }
+
     private func wakeControls() { showControls = true; interaction = UUID() }
     private func time(_ value: Double) -> String {
         let seconds = max(0, Int(value))

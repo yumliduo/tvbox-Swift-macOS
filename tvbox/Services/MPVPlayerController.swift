@@ -9,6 +9,16 @@ import Libmpv
 /// All libmpv access, including teardown, belongs to this queue. The layer remains
 /// retained until the video output has stopped, even when SwiftUI removes a view.
 private final class MPVSession: @unchecked Sendable {
+    #if DEBUG
+    private static let activityLock = NSLock()
+    private static var outstandingSessions = 0
+    private var didFinishShutdown = false
+    static var pendingShutdownsForTesting: Int {
+        activityLock.lock()
+        defer { activityLock.unlock() }
+        return outstandingSessions
+    }
+    #endif
     struct Snapshot {
         var time: Double = 0
         var duration: Double = 0
@@ -35,6 +45,11 @@ private final class MPVSession: @unchecked Sendable {
     init(layer: CAMetalLayer, receive: @escaping @Sendable (Event) -> Void) {
         self.layer = layer
         self.receive = receive
+        #if DEBUG
+        Self.activityLock.lock()
+        Self.outstandingSessions += 1
+        Self.activityLock.unlock()
+        #endif
     }
 
     func start(url: URL, headers: [String: String], position: Double, mode: VideoDecodeMode, rate: Double, volume: Double) {
@@ -101,6 +116,15 @@ private final class MPVSession: @unchecked Sendable {
     }
 
     #if DEBUG
+    func waitForShutdownForTesting() async {
+        await withCheckedContinuation { continuation in
+            queue.async { [self] in
+                destroy()
+                continuation.resume()
+            }
+        }
+    }
+
     func outputSizeForTesting() async -> CGSize {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -118,6 +142,14 @@ private final class MPVSession: @unchecked Sendable {
         if let handle { mpv_terminate_destroy(handle) }
         handle = nil
         subtitleFiles.removeAll()
+        #if DEBUG
+        if !didFinishShutdown {
+            didFinishShutdown = true
+            Self.activityLock.lock()
+            Self.outstandingSessions -= 1
+            Self.activityLock.unlock()
+        }
+        #endif
     }
 
     private func fail(_ code: Int32, operation: String) {
@@ -359,6 +391,12 @@ final class MPVPlayerController: ObservableObject {
     }
 
     #if DEBUG
+    static var pendingShutdownsForTesting: Int { MPVSession.pendingShutdownsForTesting }
+    func stopAndWaitForTesting() async {
+        let closingSession = session
+        stop()
+        await closingSession?.waitForShutdownForTesting()
+    }
     func outputSizeForTesting() async -> CGSize {
         await session?.outputSizeForTesting() ?? .zero
     }
