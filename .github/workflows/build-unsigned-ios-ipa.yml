@@ -1,0 +1,61 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project tvbox.xcodeproj \
+            -scheme tvbox
+
+      - name: Build unsigned device app
+        run: |
+          xcodebuild build \
+            -project tvbox.xcodeproj \
+            -scheme tvbox \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM=''
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH='build/DerivedData/Build/Products/Release-iphoneos/TVBox.app'
+          test -d "$APP_PATH"
+          mkdir -p build/package/Payload
+          ditto "$APP_PATH" build/package/Payload/TVBox.app
+          cd build/package
+          zip -qry ../../TVBox-unsigned.ipa Payload
+          cd ../..
+          unzip -t TVBox-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBox-unsigned-ios
+          path: TVBox-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
