@@ -23,7 +23,7 @@ TVBox Swift 通过 Spider Gateway 支持两类 `type=3` 源：`csp_*` JAR 由可
 - 在 App 进程内执行 JAR、DEX、JavaScript 或 Python；macOS Gateway 可在隔离子进程执行允许列表中的 Node bundle。
 - `proxy`、`action`、云盘扫码登录。
 - `parse=1` / `jx=1` 的网页嗅探或第三方解析。
-- DRM、字幕、弹幕的 Spider 扩展字段。
+- DRM 的 Spider 扩展字段。字幕和 `playerContent.danmaku` 已由客户端按需下载处理。
 - `clan://`、`assets://` 等 Android 本地协议；Gateway 可以自行扩展这些协议。
 
 ## 3. 客户端结构
@@ -122,7 +122,10 @@ HTTP 2xx，响应体直接使用 Spider 标准 JSON，不再套 envelope。例�
   "header": {
     "User-Agent": "Example",
     "Referer": "https://example.com/"
-  }
+  },
+  "danmaku": [
+    {"name": "主弹幕", "url": "https://comments.example.com/episode.xml"}
+  ]
 }
 ```
 
@@ -171,7 +174,8 @@ type 3 剧集条目中的 URL 实际上可能只是 Spider 的播放 id。客户
 1. `parse == 0` 且 `url` 非空：直接交给播放器。
 2. `parse == 1` 或 `jx == 1`：首版返回明确的暂不支持错误。
 3. `url` 是 Gateway 代理 URL：按普通 HTTP 媒体 URL 播放。
-4. `header`：首版作为播放上下文保存；第二阶段完成系统播放器和 VLC 的全链路透传。
+4. `header`：作为播放上下文传给播放器；弹幕请求仅在同源时继承这些 Header。
+5. `danmaku`：接受 TVBox 标准的 `{name, url}` 列表，支持 Bilibili XML、DPlayer 数组及常见 JSON 对象。
 
 ## 8. 验收标准
 
@@ -184,4 +188,4 @@ type 3 剧集条目中的 URL 实际上可能只是 Spider 的播放 id。客户
 
 ## 9. 后续阶段
 
-第二阶段增加 Gateway 媒体代理、播放 Header 全链路、`parse/jx`。第三阶段再评估 `action`、云盘授权、字幕、弹幕、DRM 和 JS/Python Spider。
+第二阶段增加 Gateway 媒体代理与 `parse/jx`。后续再评估 `action`、云盘授权、DRM 和 JS/Python Spider。

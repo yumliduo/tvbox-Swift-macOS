@@ -86,6 +86,7 @@ struct PlayerView: View {
     let urlString: String
     var headers: [String: String] = [:]
     var sourceSubtitles: [SourceSubtitle] = []
+    var danmakuComments: [DanmakuComment] = []
     var startPosition: Double = 0
     var onProgressChanged: ((Double, Double?) -> Void)? = nil
     var onPlaybackEnded: (() -> Void)? = nil
@@ -97,6 +98,8 @@ struct PlayerView: View {
     var mpvController: MPVPlayerController? = nil
     @AppStorage(HawkConfig.PLAY_TYPE_VOD) private var vodPlayTypeRaw = -1
     @AppStorage(HawkConfig.PLAY_TYPE) private var legacyPlayTypeRaw = PlayerEngine.system.rawValue
+    @AppStorage(HawkConfig.DANMAKU_ENABLED) private var danmakuEnabled = true
+    @State private var danmakuTime: Double = 0
     
     private var selectedEngine: PlayerEngine {
         let defaults = UserDefaults.standard
@@ -119,7 +122,7 @@ struct PlayerView: View {
                     urlString: urlString,
                     headers: headers,
                     startPosition: startPosition,
-                    onProgressChanged: onProgressChanged,
+                    onProgressChanged: trackProgress,
                     onPlaybackEnded: onPlaybackEnded,
                     onToggleFullScreen: onToggleFullScreen,
                     canPlayNext: canPlayNext,
@@ -129,7 +132,7 @@ struct PlayerView: View {
             case .mpv:
                 #if os(macOS) && canImport(Libmpv)
                 MPVPlayerView(urlString: urlString, headers: headers, sourceSubtitles: sourceSubtitles, startPosition: startPosition,
-                              onProgressChanged: onProgressChanged, onPlaybackEnded: onPlaybackEnded,
+                              onProgressChanged: trackProgress, onPlaybackEnded: onPlaybackEnded,
                               onToggleFullScreen: onToggleFullScreen, canPlayNext: canPlayNext,
                               onPlayNext: onPlayNext, sharedController: mpvController)
                 #else
@@ -140,13 +143,35 @@ struct PlayerView: View {
                     urlString: urlString,
                     headers: headers,
                     startPosition: startPosition,
-                    onProgressChanged: onProgressChanged,
+                    onProgressChanged: trackProgress,
                     onPlaybackEnded: onPlaybackEnded,
                     onToggleFullScreen: onToggleFullScreen,
                     canPlayNext: canPlayNext,
                     onPlayNext: onPlayNext,
                     sharedController: vlcController
                 )
+            }
+        }
+        .overlay {
+            if danmakuEnabled, !danmakuComments.isEmpty {
+                DanmakuOverlay(comments: danmakuComments, currentTime: danmakuTime)
+                    .padding(.vertical, 8)
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if !danmakuComments.isEmpty {
+                Button {
+                    danmakuEnabled.toggle()
+                } label: {
+                    Label(danmakuEnabled ? "弹幕开" : "弹幕关", systemImage: danmakuEnabled ? "text.bubble.fill" : "text.bubble")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.65), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .padding(12)
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -185,6 +210,11 @@ struct PlayerView: View {
                 vlcController?.stop()
             }
         }
+    }
+
+    private func trackProgress(_ seconds: Double, _ duration: Double?) {
+        danmakuTime = max(0, seconds)
+        onProgressChanged?(seconds, duration)
     }
 }
 

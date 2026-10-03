@@ -115,6 +115,7 @@ struct SpiderPlaybackResult: Equatable {
     let headers: [String: String]
     let qualityOptions: [SpiderPlaybackQualityOption]
     var subtitles: [SourceSubtitle] = []
+    var danmakuSources: [SourceDanmaku] = []
 }
 
 /// type=3 的远程执行客户端。响应体使用 Spider 标准 JSON。
@@ -232,12 +233,15 @@ final class SpiderGatewayService {
         guard !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw SpiderGatewayError.emptyPlayerURL
         }
+        let mediaHeaders = sanitizedHeaders(object["header"])
         return SpiderPlaybackResult(
             url: url,
-            headers: sanitizedHeaders(object["header"]),
+            headers: mediaHeaders,
             qualityOptions: Self.playbackQualityOptions(from: object),
             subtitles: SourceSubtitleParser.parse(from: object, mediaURL: URL(string: url),
-                                            mediaHeaders: sanitizedHeaders(object["header"]))
+                                            mediaHeaders: mediaHeaders),
+            danmakuSources: SourceDanmakuParser.parse(from: object, mediaURL: URL(string: url),
+                                                      mediaHeaders: mediaHeaders)
         )
     }
 

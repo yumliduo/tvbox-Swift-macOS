@@ -30,6 +30,7 @@ struct HawkConfig {
     static let SEARCH_HISTORY = "search_history"
     static let SPIDER_GATEWAY_URL = "spider_gateway_url"
     static let SPIDER_GATEWAY_TOKEN = "spider_gateway_token"
+    static let DANMAKU_ENABLED = "danmaku_enabled"
 }
 
 /// 仅用于错误提示和日志展示，避免把 URL 中的凭据直接暴露给用户。

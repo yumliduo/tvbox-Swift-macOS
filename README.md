@@ -9,6 +9,7 @@
 - AVPlayer、VLCKit，以及 macOS 内置 mpv 播放内核；网盘资源支持清晰度选择。
 - mpv 支持 VideoToolbox 硬解、字幕选择与时间偏移；实际解码状态显示在播放控制栏。
 - 当前源码新增来源外挂字幕选择（尚未包含在 1.0.9 安装包中）：解析播放响应的 `subt` / `subtitles` / `subtitle` / `subs` 列表，mpv 字幕菜单按名称显示、按需加载，支持切换和关闭。接口必须实际返回字幕地址；视频画面里的硬字幕无法拆分选择。
+- 支持 Spider `playerContent.danmaku` 弹幕列表，按需下载 Bilibili XML 或常见 JSON/DPlayer 数据，在全部点播内核上同步覆盖显示并可随时关闭。
 - macOS 内置 CatVod Node Gateway，无需 Android 或单独启动服务。
 - 支持 CatVod `index.js` / `index.js.md5`、Basic Auth、校验、会话复用与自动回收。
 - 夸克、夸父、盘搜等网盘搜索协议；夸克网页登录获取 Cookie 并原生播放。
@@ -21,6 +22,7 @@
 | CMS `type=0/1/4` | ✅ | ✅ |
 | CatVod Node 动态源 | 内置 | 需外部 HTTPS Gateway |
 | Java/DEX `csp_*` JAR | 需兼容 Worker | 需外部 Gateway |
+| Spider XML/JSON 弹幕 | ✅ | ✅ |
 | 夸克账号与原生网盘解析 | ✅ | 暂未内置 |
 
 App 不执行 Java/DEX，也不保证兼容所有第三方规则、网页嗅探、DRM 或解析器。

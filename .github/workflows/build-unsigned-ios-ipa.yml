@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - .github/workflows/build-unsigned-ios-ipa.yml
+      - tvbox/**
+      - project.yml
+      - Config/**
   workflow_dispatch:
 
 permissions:

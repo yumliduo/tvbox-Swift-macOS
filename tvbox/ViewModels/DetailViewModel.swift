@@ -40,6 +40,7 @@ class DetailViewModel: ObservableObject {
     /// Spider playerContent 返回的播放请求头，供播放器适配层使用。
     @Published var playbackHeaders: [String: String] = [:]
     @Published var sourceSubtitles: [SourceSubtitle] = []
+    @Published var danmakuComments: [DanmakuComment] = []
     /// 续播起始位置（秒）。
     @Published var resumeSeconds: Double = 0
     /// 当前可选清晰度列表。
@@ -63,6 +64,7 @@ class DetailViewModel: ObservableObject {
     private var qualityResolveTask: Task<Void, Never>?
     /// Spider 播放地址解析任务。
     private var playbackResolveTask: Task<Void, Never>?
+    private var danmakuLoadTask: Task<Void, Never>?
     private var playbackResolveToken = UUID()
     /// 解析令牌，防止异步结果回写到过期状态。
     private var qualityResolveToken = UUID()
@@ -281,6 +283,8 @@ class DetailViewModel: ObservableObject {
         let token = UUID()
         playbackResolveToken = token
         sourceSubtitles = []
+        danmakuLoadTask?.cancel()
+        danmakuComments = []
         errorMessage = nil
 
         guard let sourceKey = vodInfo?.sourceKey,
@@ -307,6 +311,7 @@ class DetailViewModel: ObservableObject {
                 guard !Task.isCancelled, playbackResolveToken == token else { return }
                 playbackHeaders = result.headers
                 sourceSubtitles = result.subtitles
+                loadDanmaku(result.danmakuSources, token: token)
                 if result.qualityOptions.count > 1 {
                     applySpiderQualityOptions(result.qualityOptions, automaticURL: result.url)
                 } else {
@@ -320,6 +325,26 @@ class DetailViewModel: ObservableObject {
                 isPlaying = false
                 errorMessage = error.localizedDescription
             }
+        }
+    }
+
+    private func loadDanmaku(_ sources: [SourceDanmaku], token: UUID) {
+        danmakuLoadTask?.cancel()
+        guard !sources.isEmpty else {
+            danmakuComments = []
+            return
+        }
+        danmakuLoadTask = Task {
+            let loader = SourceDanmakuLoader()
+            var merged: [DanmakuComment] = []
+            for source in sources.prefix(4) {
+                guard !Task.isCancelled else { return }
+                if let comments = try? await loader.load(source) {
+                    merged.append(contentsOf: comments)
+                }
+            }
+            guard !Task.isCancelled, playbackResolveToken == token else { return }
+            danmakuComments = Array(merged.sorted { $0.time < $1.time }.prefix(SourceDanmakuLoader.maximumComments))
         }
     }
 

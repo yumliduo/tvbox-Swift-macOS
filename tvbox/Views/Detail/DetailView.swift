@@ -37,6 +37,7 @@ struct DetailView: View {
                         urlString: url,
                         headers: viewModel.playbackHeaders,
                         sourceSubtitles: viewModel.sourceSubtitles,
+                        danmakuComments: viewModel.danmakuComments,
                         startPosition: viewModel.currentPlaybackSeconds(),
                         onProgressChanged: handlePlaybackProgress,
                         onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -137,6 +138,7 @@ struct DetailView: View {
                     urlString: url,
                     headers: viewModel.playbackHeaders,
                     sourceSubtitles: viewModel.sourceSubtitles,
+                    danmakuComments: viewModel.danmakuComments,
                     startPosition: viewModel.currentPlaybackSeconds(),
                     onProgressChanged: handlePlaybackProgress,
                     onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -174,6 +176,7 @@ struct DetailView: View {
                     urlString: url,
                     headers: viewModel.playbackHeaders,
                     sourceSubtitles: viewModel.sourceSubtitles,
+                    danmakuComments: viewModel.danmakuComments,
                     startPosition: viewModel.currentPlaybackSeconds(),
                     onProgressChanged: handlePlaybackProgress,
                     onPlaybackEnded: playNextEpisodeIfNeeded,
@@ -637,6 +640,7 @@ struct FullScreenPlayerView: View {
     let urlString: String
     var headers: [String: String] = [:]
     var sourceSubtitles: [SourceSubtitle] = []
+    var danmakuComments: [DanmakuComment] = []
     var startPosition: Double = 0
     var onProgressChanged: ((Double, Double?) -> Void)? = nil
     var onPlaybackEnded: (() -> Void)? = nil
@@ -656,6 +660,7 @@ struct FullScreenPlayerView: View {
                 urlString: urlString,
                 headers: headers,
                 sourceSubtitles: sourceSubtitles,
+                danmakuComments: danmakuComments,
                 startPosition: startPosition,
                 onProgressChanged: onProgressChanged,
                 onPlaybackEnded: onPlaybackEnded,
