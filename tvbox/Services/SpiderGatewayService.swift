@@ -64,7 +64,7 @@ enum SpiderGatewaySettings {
               !host.isEmpty else {
             throw SpiderGatewayError.invalidGatewayURL
         }
-        if scheme == "http", !Self.isLoopbackHost(host) {
+        if scheme == "http", !Self.isPrivateGatewayHost(host) {
             throw SpiderGatewayError.insecureGatewayURL
         }
         try PrivateSettingsStore.save(
@@ -83,11 +83,14 @@ enum SpiderGatewaySettings {
         )
     }
 
-    private static func isLoopbackHost(_ host: String) -> Bool {
+    private static func isPrivateGatewayHost(_ host: String) -> Bool {
         let normalized = host.lowercased()
         if normalized == "localhost" || normalized == "::1" { return true }
-        let components = normalized.split(separator: ".")
-        return components.count == 4 && components.first == "127"
+        let components = normalized.split(separator: ".").compactMap { Int($0) }
+        guard components.count == 4, components.allSatisfy({ (0...255).contains($0) }) else { return false }
+        if components[0] == 127 || components[0] == 10 { return true }
+        if components[0] == 192 && components[1] == 168 { return true }
+        return components[0] == 172 && (16...31).contains(components[1])
     }
 
     static func useEmbeddedGateway(at value: String?, token: String? = nil) {
@@ -399,7 +402,7 @@ enum SpiderGatewayError: LocalizedError {
         switch self {
         case .notConfigured: return "请先在设置中配置 Spider Gateway"
         case .invalidGatewayURL: return "Spider Gateway 地址必须是 HTTP 或 HTTPS URL"
-        case .insecureGatewayURL: return "远程 Spider Gateway 必须使用 HTTPS；HTTP 仅允许本机回环地址"
+        case .insecureGatewayURL: return "公网 Spider Gateway 必须使用 HTTPS；HTTP 仅允许本机或私有局域网地址"
         case .missingJar: return "该 Spider 源没有配置运行包地址"
         case .unsupportedAPI(let api): return "Spider Gateway 不支持 API：\(api)"
         case .invalidResponse: return "Spider Gateway 返回了无效响应"

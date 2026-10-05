@@ -59,6 +59,17 @@ final class SpiderGatewayTests: XCTestCase {
         XCTAssertTrue(SpiderGatewaySettings.token.isEmpty)
     }
 
+    func testPrivateLANHTTPGatewayIsAcceptedButPublicHTTPIsRejected() throws {
+        let previous = SpiderGatewaySettings.savedBaseURL
+        defer { try? SpiderGatewaySettings.save(previous) }
+
+        XCTAssertNoThrow(try SpiderGatewaySettings.save("http://10.47.244.139:8787"))
+        XCTAssertNoThrow(try SpiderGatewaySettings.save("http://192.168.1.20:8787"))
+        XCTAssertNoThrow(try SpiderGatewaySettings.save("http://172.31.0.5:8787"))
+        XCTAssertThrowsError(try SpiderGatewaySettings.save("http://8.8.8.8:8787"))
+        XCTAssertThrowsError(try SpiderGatewaySettings.save("http://example.com:8787"))
+    }
+
     func testCatVodBundleURLRecognition() {
         XCTAssertTrue(SpiderGatewayService.isCatVodBundleURL("https://example.com/cat/index.js"))
         XCTAssertTrue(SpiderGatewayService.isCatVodBundleURL("https://example.com/cat/index.js.md5"))

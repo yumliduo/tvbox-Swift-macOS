@@ -71,9 +71,7 @@ export function loadConfig(overrides = {}) {
 
   return {
     host,
-    port: process.env.SPIDER_GATEWAY_PORT === undefined
-      ? integer("PORT", 8787, 0)
-      : integer("SPIDER_GATEWAY_PORT", 8787, 0),
+    port: integer("SPIDER_GATEWAY_PORT", 8787, 0),
     token,
     cloudConfig,
     panSouEndpoint: process.env.TVBOX_PANSOU_ENDPOINT || undefined,
