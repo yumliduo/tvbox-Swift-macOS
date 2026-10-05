@@ -31,9 +31,14 @@ jobs:
 
       - name: Resolve Swift packages
         run: |
-          xcodebuild -resolvePackageDependencies \
-            -project tvbox.xcodeproj \
-            -scheme tvbox
+          for attempt in 1 2 3; do
+            xcodebuild -resolvePackageDependencies \
+              -project tvbox.xcodeproj \
+              -scheme tvbox && exit 0
+            echo "Package resolution attempt ${attempt} failed"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       - name: Build unsigned device app
         run: |
