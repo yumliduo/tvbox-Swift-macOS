@@ -25,6 +25,12 @@ curl http://127.0.0.1:8787/health
 
 没有配置 `SPIDER_WORKER_COMMAND` 时 CatVod Node 源仍可正常使用，只有 `csp_*` JAR 调用会返回 `WORKER_UNAVAILABLE`。
 
+## 固定公网地址（Render）
+
+仓库根目录包含 `render.yaml`，可在 Render Dashboard 选择 **New Blueprint Instance**，连接自己的 Fork 后部署。Render 会提供固定的 `https://*.onrender.com` 地址，并自动生成 `SPIDER_GATEWAY_TOKEN`；在 Dashboard 的 Environment 页面查看 Token 后填入 App，不要把 Token 提交到仓库。
+
+免费实例长期保留固定域名，但空闲时会休眠，第一次请求可能需要等待恢复；需要持续在线时应改用付费实例或自有服务器。Gateway 会自动读取托管平台提供的 `PORT`，也可以用 `SPIDER_GATEWAY_PORT` 显式覆盖。
+
 在 App 设置里填写本机 Gateway 地址 `http://127.0.0.1:8787`（如设置了 Token 也一并填写），然后把下面的 bundle 地址作为点播接口导入：
 
 ```text

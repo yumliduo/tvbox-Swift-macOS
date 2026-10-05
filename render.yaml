@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: tvbox-spider-gateway
+    runtime: node
+    plan: free
+    rootDir: spider-gateway
+    buildCommand: npm install --ignore-scripts
+    startCommand: node src/index.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: SPIDER_GATEWAY_HOST
+        value: 0.0.0.0
+      - key: SPIDER_GATEWAY_TOKEN
+        generateValue: true
